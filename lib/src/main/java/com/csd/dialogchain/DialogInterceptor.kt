@@ -1,5 +1,7 @@
 package com.csd.dialogchain
 
+import androidx.annotation.CallSuper
+
 /**
 
  * Author：岑胜德 on 2021/11/22 00:23
@@ -10,16 +12,13 @@ package com.csd.dialogchain
 class DialogInterceptor : Interceptor {
     private var mChain: DialogChain? = null
 
+    @CallSuper
     override fun intercept(chain: DialogChain) {
         mChain = chain
     }
 
 
     /*执行下一个拦截器*/
-    fun next() {
-        mChain?.process()
-    }
+    fun chain(): DialogChain? = mChain
 
-    // 是否已经拦截。
-    fun hasIntercepted() = mChain != null
 }

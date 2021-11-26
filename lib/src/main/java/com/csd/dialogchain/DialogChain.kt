@@ -1,6 +1,7 @@
 package com.csd.dialogchain
 
-import android.content.Context
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentActivity
 import java.util.ArrayList
 
 /**
@@ -11,36 +12,52 @@ import java.util.ArrayList
 
  */
 open class DialogChain private constructor(
-    val context: Context,
-    private val interceptors: MutableList<Interceptor>,
-    private val index: Int = 0
+    val activity: FragmentActivity? = null,
+    val fragment: Fragment? = null,
+    private var interceptors: MutableList<Interceptor>?
 ) {
     companion object {
         @JvmStatic
-        fun create(context: Context, initialCapacity: Int = 0): Builder {
-            return Builder(context, initialCapacity)
+        fun create(initialCapacity: Int = 0): Builder {
+            return Builder(initialCapacity)
+        }
+        @JvmStatic
+        fun openLog(isOpen:Boolean){
+            isOpenLog=isOpen
         }
     }
 
+    private var index: Int = 0
 
     fun process() {
+        interceptors ?: return
         when (index) {
-            in interceptors.indices -> {
-                val next = DialogChain(context, interceptors, index + 1)
-                interceptors[index].intercept(next)
+            in interceptors!!.indices -> {
+                val interceptor = interceptors!![index]
+                index++
+                interceptor.intercept(this)
             }
-            interceptors.size -> {
-                clearInterceptor()
+            interceptors!!.size -> {
+                "===> clearAllInterceptors".logI(this)
+                clearAllInterceptors()
             }
         }
     }
 
-    private fun clearInterceptor() {
-        interceptors.clear()
+    private fun clearAllInterceptors() {
+        interceptors?.clear()
+        interceptors = null
     }
 
-    open class Builder(private val context: Context, private val initialCapacity: Int = 0) {
-        private val interceptors by lazy { ArrayList<Interceptor>(initialCapacity) }
+    open class Builder(private val initialCapacity: Int = 0) {
+        private val interceptors by lazy(LazyThreadSafetyMode.NONE) {
+            ArrayList<Interceptor>(
+                initialCapacity
+            )
+        }
+        private var activity: FragmentActivity? = null
+        private var fragment: Fragment? = null
+
 
         fun addInterceptor(interceptor: Interceptor): Builder {
             if (!interceptors.contains(interceptor)) {
@@ -49,8 +66,19 @@ open class DialogChain private constructor(
             return this
         }
 
+        fun attach(fragment: Fragment): Builder {
+            this.fragment = fragment
+            return this
+        }
+
+        fun attach(activity: FragmentActivity): Builder {
+            this.activity = activity
+            return this
+        }
+
+
         fun build(): DialogChain {
-            return DialogChain(context, interceptors)
+            return DialogChain(activity, fragment, interceptors)
         }
     }
 
